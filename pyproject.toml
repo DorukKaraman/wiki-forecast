@@ -8,10 +8,12 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "lightgbm>=4.7.0",
     "pandas>=2.3.3",
     "prophet>=1.5.0",
     "pyarrow>=21.0.0",
     "requests>=2.32.5",
+    "scikit-learn>=1.9.1",
     "statsforecast>=2.0.1",
 ]
 

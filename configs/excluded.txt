@@ -1,0 +1,58 @@
+# Articles excluded from the dataset, with reasons.
+# Lines starting with "#" are comments.
+
+# Adult / explicit content
+Sex
+Sexual_intercourse
+Sex_position
+69_(sex_position)
+Pornhub
+XNXX
+XVideos
+XHamster
+.xxx
+2_Girls_1_Cup
+Rule_34
+Mia_Khalifa
+Bonnie_Blue_(actress)
+OnlyFans
+
+# Search artifacts: traffic driven by people searching the letters, not the topic
+XXX
+XXXX
+XXXX_(beer)
+XXX_(film_series)
+XXX_(2002_film)
+XXX:_Return_of_Xander_Cage
+XXX:_State_of_the_Union
+X_(2022_film)
+
+# Piracy sites
+The_Pirate_Bay
+1337x
+Z-Library
+
+# Offensive content
+List_of_ethnic_slurs
+
+# Suspected automated / anomalous traffic (implausibly high, persistent ranks)
+Cleopatra
+Ansel_Adams
+Neatsville,_Kentucky
+A
+Null
+HTTP_404
+HTTP_cookie
+Limonene
+Raindrop_cake
+Mount_Takahe
+Kepler's_Supernova
+Biggest_ball_of_twine
+Algebraic_notation_(chess)
+BBC_World_Service
+Voice_of_Vietnam
+
+# Self-referential: mostly navigation to Wikipedia itself
+Wikipedia
+Wiki
+Wikimedia_Foundation
