@@ -19,6 +19,7 @@ FEATURES = [
 ]
 
 FEATURES_WITH_CORR = [*FEATURES, "season_corr"]
+FEATURES_PEAK = ["season_1y_raw", "season_1y_max"]
 
 
 def to_log_wide(df: pd.DataFrame) -> pd.DataFrame:
@@ -62,6 +63,7 @@ def build_dataset(log_wide: pd.DataFrame, origins, horizons) -> pd.DataFrame:
 
     # --- horizon-specific features and target ----------------------------
     smooth = log_wide.rolling(7, center=True).mean()
+    peak = log_wide.rolling(7, center=True).max()
     frames = []
     for h in horizons:
         f = base.copy()
@@ -70,6 +72,9 @@ def build_dataset(log_wide: pd.DataFrame, origins, horizons) -> pd.DataFrame:
             # value around (target date - years*364), as seen from the origin
             shifted = smooth.shift(364 * years - h)
             f[f"season_{years}y"] = at_origins(shifted).reindex(f.index) - f["level"]
+        # Sharper seasonal hints: the exact day and the 7-day maximum, one year earlier
+        f["season_1y_raw"] = at_origins(log_wide.shift(364 - h)).reindex(f.index) - f["level"]
+        f["season_1y_max"] = at_origins(peak.shift(364 - h)).reindex(f.index) - f["level"]
         f["target"] = at_origins(log_wide.shift(-h)).reindex(f.index) - f["level"]
         frames.append(f)
 

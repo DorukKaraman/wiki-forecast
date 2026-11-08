@@ -20,6 +20,10 @@ PARAMS = {
     "verbose": -1,
 }
 
+def quantile_params(alpha: float) -> dict:
+    """Same settings as PARAMS, but trained for the `alpha` quantile."""
+    return {**PARAMS, "objective": "quantile", "alpha": alpha}
+
 
 def make_X(df: pd.DataFrame, features: list[str], articles: list[str]) -> pd.DataFrame:
     """Select model inputs; encode `article` with a fixed category list if it's used."""
@@ -43,6 +47,7 @@ def global_backtest(
     name: str,
     retrain_every: int = 6,
     features=FEATURES,
+    params=PARAMS,
 ) -> pd.DataFrame:
     """Backtest one model across all articles in `log_wide`.
 
@@ -63,7 +68,7 @@ def global_backtest(
         if i % retrain_every == 0:
             start = time.perf_counter()
             train = train_data[(train_data["target_date"] <= cutoff) & train_data["target"].notna()]
-            model = fit(train, features, articles)
+            model = fit(train, features, articles, params)
             print(f"{name}: trained on {len(train):,} rows up to {cutoff.date()} "
                   f"in {time.perf_counter() - start:.0f}s")
 

@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -65,3 +66,13 @@ def summarize(results: pd.DataFrame) -> pd.DataFrame:
         .agg(MAE=("abs_err", "mean"), MASE=("scaled_err", "mean"))
         .sort_values("MASE")
     )
+
+def cached(path: Path, compute):
+    """Load results if saved, otherwise compute and save them."""
+    path = Path(path)
+    if path.exists():
+        print(f"loaded {path.name}")
+        return pd.read_parquet(path)
+    result = compute()
+    result.to_parquet(path, index=False)
+    return result
