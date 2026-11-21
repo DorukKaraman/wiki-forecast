@@ -28,12 +28,16 @@ session = requests.Session()
 session.headers.update(HEADERS)
 
 
-def _get(url: str, retries: int = 3) -> dict:
+def _get(url: str, retries: int = 5) -> dict:
     """GET with retries for rate limiting (429) and server errors (5xx)."""
     for attempt in range(retries):
         response = session.get(url, timeout=30)
         if response.status_code == 429 or response.status_code >= 500:
-            time.sleep(2**attempt)  # wait 1s, 2s, 4s
+            try:
+                wait = float(response.headers.get("Retry-After", 2**attempt))
+            except ValueError:  # Retry-After can also be a date; fall back to backoff
+                wait = 2**attempt
+            time.sleep(wait)  # default backoff: 1, 2, 4, 8, 16 seconds
             continue
         response.raise_for_status()
         return response.json()
@@ -100,12 +104,15 @@ def select_articles(months: list[tuple[int, int]], n: int) -> list[str]:
     return selected
 
 
-def fetch_many(articles: list[str]) -> pd.DataFrame:
-    """Fetch every article; skip (and report) the ones that fail."""
+def fetch_many(articles: list[str], **fetch_kwargs) -> pd.DataFrame:
+    """Fetch every article; skip (and report) the ones that fail.
+
+    Extra keyword arguments (e.g. start="20261106") go to fetch_pageviews.
+    """
     frames, failed = [], []
     for i, article in enumerate(articles, start=1):
         try:
-            frames.append(fetch_pageviews(article))
+            frames.append(fetch_pageviews(article, **fetch_kwargs))
         except requests.HTTPError as error:
             failed.append(article)
             print(f"  skipped {article}: {error}")
@@ -113,6 +120,8 @@ def fetch_many(articles: list[str]) -> pd.DataFrame:
             print(f"  {i}/{len(articles)} fetched")
         time.sleep(0.05)
     print(f"Done: {len(frames)} fetched, {len(failed)} skipped")
+    if not frames:
+        return pd.DataFrame(columns=["date", "article", "views"])
     return pd.concat(frames, ignore_index=True)
 
 
