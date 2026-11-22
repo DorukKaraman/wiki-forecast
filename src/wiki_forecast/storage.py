@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-from huggingface_hub import HfApi, hf_hub_download
+from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
 
 from wiki_forecast.ingest import RAW_FILE
 
@@ -44,6 +44,18 @@ def check_roundtrip() -> None:
     pd.testing.assert_frame_equal(local, remote)
     print(f"OK: Hub copy matches local file ({len(remote):,} rows, "
           f"{remote['article'].nunique()} articles)")
+
+
+def upload_many(files: dict[str, Path], message: str, repo_id: str = DATA_REPO,
+                repo_type: str = "dataset") -> None:
+    """Upload several files as ONE commit: {path_in_repo: local_path}."""
+    operations = [
+        CommitOperationAdd(path_in_repo=path_in_repo, path_or_fileobj=str(local))
+        for path_in_repo, local in files.items()
+    ]
+    HfApi().create_commit(
+        repo_id=repo_id, repo_type=repo_type, operations=operations, commit_message=message
+    )
 
 
 if __name__ == "__main__":
