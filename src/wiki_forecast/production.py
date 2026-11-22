@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from huggingface_hub import HfApi, hf_hub_download
 
-from wiki_forecast.features import FEATURES, FEATURES_PEAK, build_dataset, to_log_wide
+from wiki_forecast.features import FEATURES, FEATURES_PEAK, build_dataset, to_log_wide, to_views
 from wiki_forecast.global_model import PARAMS, fit, make_X, quantile_params
 from wiki_forecast.storage import DATA_REPO, load_pageviews
 
@@ -107,6 +107,38 @@ def load_production(revision: str | None = None) -> tuple[dict, dict, dict[int, 
     meta = json.loads(get("metadata.json").read_text())
     calibration = {int(k): v for k, v in json.loads(get("calibration.json").read_text()).items()}
     return models, meta, calibration
+
+
+def make_forecasts(
+    df: pd.DataFrame, models: dict, meta: dict, calibration: dict[int, float]
+) -> pd.DataFrame:
+    """Forecast every article 28 days ahead from the latest date in `df`."""
+    log_wide = to_log_wide(df)
+    origin = log_wide.index[-1]
+    rows = build_dataset(log_wide, [origin], meta["horizons"])
+
+    X = make_X(rows, meta["features"], meta["articles"])
+    level = rows["level"].to_numpy(np.float64)
+    preds = np.column_stack(
+        [to_views(models[name].predict(X), level) for name in ("q10", "q50", "q90")]
+    )
+    preds = np.sort(preds, axis=1)  # fix any quantile crossing
+
+    # Conformal widening per horizon (in log space), as in the backtest.
+    adjust = rows["horizon"].map(calibration).to_numpy(np.float64)
+    q10 = np.expm1(np.log1p(preds[:, 0]) - adjust).clip(min=0)
+    q90 = np.expm1(np.log1p(preds[:, 2]) + adjust)
+
+    return pd.DataFrame({
+        "article": rows["article"].to_numpy(),
+        "origin": origin,
+        "horizon": rows["horizon"].to_numpy(),
+        "date": rows["target_date"].to_numpy(),
+        "q10": q10,
+        "q50": preds[:, 1],
+        "q90": q90,
+        "model_version": meta["version"],
+    })
 
 
 if __name__ == "__main__":

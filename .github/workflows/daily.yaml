@@ -36,3 +36,8 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: uv run python -m wiki_forecast.pipeline update
+
+      - name: Forecast
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: uv run python -m wiki_forecast.pipeline forecast
